@@ -13,12 +13,12 @@ spec:
     app: minio
     name: minio-po
   ports:
-  - name: minio-data
-    port: 9000
-    targetPort: 9000
-  - name: minio-console 
-    port: 9090
-    targetPort: 9090
+    - name: minio-data
+      port: 9000
+      targetPort: 9000
+    - name: minio-console
+      port: 9090
+      targetPort: 9090
 ---
 apiVersion: apps/v1
 kind: StatefulSet
@@ -36,14 +36,14 @@ spec:
       app: minio
       name: minio-po
   volumeClaimTemplates:
-  - metadata:
-      name: data-vol
-    spec:
-      storageClassName: do-block-storage 
-      accessModes: [ ReadWriteOnce ]
-      resources:
-        requests:
-          storage: 1Gi
+    - metadata:
+        name: data-vol
+      spec:
+        storageClassName: do-block-storage
+        accessModes: [ReadWriteOnce]
+        resources:
+          requests:
+            storage: 1Gi
   template:
     metadata:
       name: minio-po
@@ -52,55 +52,55 @@ spec:
         name: minio-po
     spec:
       initContainers:
-      - name: busybox
-        image: busybox
-        imagePullPolicy: IfNotPresent
-        command:
-        - /bin/sh
-        - -c
-        - "chown 1001:1001 /data"
-        volumeMounts:
-        - name: data-vol
-          mountPath: /data
+        - name: busybox
+          image: busybox
+          imagePullPolicy: IfNotPresent
+          command:
+            - /bin/sh
+            - -c
+            - "chown 1001:1001 /data"
+          volumeMounts:
+            - name: data-vol
+              mountPath: /data
       containers:
-      - name: minio-container
-        image: bitnami/minio:2023.10.25
-        imagePullPolicy: IfNotPresent
-        command:
-        - minio
-        - server
-        - --address=:9000
-        - --console-address=:9090
-        - http://minio-sts-{0...2}.minio-hsvc.minio.svc.cluster.local/data
-        envFrom:
-        - configMapRef:
-            name: minio-cm
-        - secretRef:
-            name: minio-secret
-        livenessProbe:
-          httpGet:
-            path: /minio/health/live
-            port: 9000
-          periodSeconds: 60
-          successThreshold: 1
-          failureThreshold: 3
-          timeoutSeconds: 5
-        readinessProbe:
-          httpGet:
-            path: /minio/health/live
-            port: 9000
-          periodSeconds: 60
-          successThreshold: 1
-          failureThreshold: 3
-          timeoutSeconds: 5
-        ports:
-        - name: minio-data
-          containerPort: 9000
-        - name: minio-console
-          containerPort: 9090
-        volumeMounts:
-        - name: data-vol
-          mountPath: /data
+        - name: minio-container
+          image: bitnami/minio:2023.10.25
+          imagePullPolicy: IfNotPresent
+          command:
+            - minio
+            - server
+            - --address=:9000
+            - --console-address=:9090
+            - http://minio-sts-{0...2}.minio-hsvc.minio.svc.cluster.local/data
+          envFrom:
+            - configMapRef:
+                name: minio-cm
+            - secretRef:
+                name: minio-secret
+          livenessProbe:
+            httpGet:
+              path: /minio/health/live
+              port: 9000
+            periodSeconds: 60
+            successThreshold: 1
+            failureThreshold: 3
+            timeoutSeconds: 5
+          readinessProbe:
+            httpGet:
+              path: /minio/health/ready
+              port: 9000
+            periodSeconds: 60
+            successThreshold: 1
+            failureThreshold: 3
+            timeoutSeconds: 5
+          ports:
+            - name: minio-data
+              containerPort: 9000
+            - name: minio-console
+              containerPort: 9090
+          volumeMounts:
+            - name: data-vol
+              mountPath: /data
 
 ---
 apiVersion: v1
@@ -117,12 +117,12 @@ spec:
     app: minio
     name: minio-po
   ports:
-  - name: minio-data 
-    port: 9000
-    targetPort: 9000
-  - name: minio-console 
-    port: 9090
-    targetPort: 9090
+    - name: minio-data
+      port: 9000
+      targetPort: 9000
+    - name: minio-console
+      port: 9090
+      targetPort: 9090
 ---
 apiVersion: networking.k8s.io/v1
 kind: Ingress
@@ -137,23 +137,23 @@ metadata:
 spec:
   ingressClassName: nginx
   rules:
-  - host: data-146.190.192.76.nip.io
-    http:
-      paths:
-      - path: /
-        pathType: Prefix
-        backend:
-          service:
-            name: minio-svc
-            port:
-              name: minio-data
-  - host: console-146.190.192.76.nip.io
-    http:
-      paths:
-      - path: /
-        pathType: Prefix
-        backend:
-          service:
-            name: minio-svc
-            port:
-              name: minio-console
+    - host: data-146.190.192.76.nip.io
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: minio-svc
+                port:
+                  name: minio-data
+    - host: console-146.190.192.76.nip.io
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: minio-svc
+                port:
+                  name: minio-console
